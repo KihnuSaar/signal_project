@@ -1,20 +1,17 @@
 package com.cardio_generator.outputs;
 
 /**
- * Defines a common interface for outputting generated patient health data.
- *
- * <p>Different implementations can send the data to different destinations.
+ * Defines how generated patient data should be output.
  */
 public interface OutputStrategy {
 
     /**
-     * Outputs one generated health data measurement.
+     * Outputs one generated patient data record.
      *
-     * @param patientId the identifier of the patient whose data is being output
-     * @param timestamp the time at which the data was generated, usually in
-     *     milliseconds since the Unix epoch
-     * @param label the type of measurement, such as {@code Saturation}
-     * @param data the generated measurement value formatted as text
+     * @param patientId the ID of the patient
+     * @param timestamp the time the data was generated
+     * @param label     the type of data, such as ECG or BloodPressure
+     * @param data      the generated data value
      */
     void output(int patientId, long timestamp, String label, String data);
 }

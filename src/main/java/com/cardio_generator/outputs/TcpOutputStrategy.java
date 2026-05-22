@@ -7,64 +7,68 @@ import java.net.Socket;
 import java.util.concurrent.Executors;
 
 /**
- * Outputs generated patient data to a TCP client.
- *
- * <p>This class starts a TCP server on the given port.
+ * Outputs generated patient data through a TCP socket.
  */
 public class TcpOutputStrategy implements OutputStrategy {
 
-    private ServerSocket serverSocket;
-    private Socket clientSocket;
     private PrintWriter out;
 
     /**
-     * Creates a TCP output strategy and starts a server socket on the given port.
+     * Creates a TCP server on the given port.
      *
-     * <p>The client connection is accepted on a separate thread so that the main
-     * simulator can continue running while waiting for a client.
-     *
-     * @param port the TCP port on which the server should listen
+     * @param port the port to listen on
      */
     public TcpOutputStrategy(int port) {
         try {
-            serverSocket = new ServerSocket(port);
-            System.out.println("TCP Server started on port " + port);
+            ServerSocket serverSocket = new ServerSocket(port);
+            System.out.println("TCP server started on port " + port);
 
-            Executors.newSingleThreadExecutor()
-                    .submit(
-                            () -> {
-                                try {
-                                    clientSocket = serverSocket.accept();
-                                    out = new PrintWriter(clientSocket.getOutputStream(), true);
-                                    System.out.println(
-                                            "Client connected: "
-                                                    + clientSocket.getInetAddress());
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            });
-        } catch (IOException e) {
-            e.printStackTrace();
+            Executors.newSingleThreadExecutor().submit(() -> acceptClient(serverSocket));
+        } catch (IOException exception) {
+            System.err.println("Could not start TCP server: " + exception.getMessage());
         }
     }
 
     /**
-     * Sends one generated health data measurement to the connected TCP client.
+     * Waits for one TCP client to connect.
      *
-     * <p>If no client is connected yet, this method does not send anything. When
-     * a client is connected, the data is sent in the format
-     * {@code patientId,timestamp,label,data}.
+     * @param serverSocket the TCP server socket
+     */
+    private void acceptClient(ServerSocket serverSocket) {
+        try {
+            Socket clientSocket = serverSocket.accept();
+            out = new PrintWriter(clientSocket.getOutputStream(), true);
+            System.out.println("TCP client connected: " + clientSocket.getInetAddress());
+        } catch (IOException exception) {
+            System.err.println("Could not accept TCP client: " + exception.getMessage());
+        }
+    }
+
+    /**
+     * Sends one patient data record to the connected TCP client.
      *
-     * @param patientId the identifier of the patient whose data is being sent
-     * @param timestamp the time at which the data was generated, in milliseconds
-     * @param label the measurement type, such as {@code Saturation}
-     * @param data the generated measurement value formatted as text
+     * @param patientId the ID of the patient
+     * @param timestamp the time the data was generated
+     * @param label     the type of data
+     * @param data      the generated data value
      */
     @Override
     public void output(int patientId, long timestamp, String label, String data) {
         if (out != null) {
-            String message = String.format("%d,%d,%s,%s", patientId, timestamp, label, data);
-            out.println(message);
+            out.println(formatOutput(patientId, timestamp, label, data));
         }
+    }
+
+    /**
+     * Formats a patient data record.
+     *
+     * @param patientId the ID of the patient
+     * @param timestamp the timestamp of the record
+     * @param label     the data label
+     * @param data      the data value
+     * @return formatted comma-separated output
+     */
+    private String formatOutput(int patientId, long timestamp, String label, String data) {
+        return patientId + "," + timestamp + "," + label + "," + data;
     }
 }

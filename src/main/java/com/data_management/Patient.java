@@ -1,6 +1,7 @@
 package com.data_management;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 /**
@@ -59,5 +60,15 @@ public class Patient {
             }
         }
         return recordsInRange;
+    }
+
+    public int getPatientId() {
+        return patientId;
+    }
+
+    public List<PatientRecord> getAllRecords() {
+        List<PatientRecord> copy = new ArrayList<>(patientRecords);
+        copy.sort(Comparator.comparingLong(PatientRecord::getTimestamp));
+        return copy;
     }
 }
